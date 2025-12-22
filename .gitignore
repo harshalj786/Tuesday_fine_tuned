@@ -1,0 +1,95 @@
+# ============================
+# Python bytecode & cache
+# ============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ============================
+# Virtual environments
+# ============================
+gpu_env/
+env/
+venv/
+.venv/
+.env
+
+# ============================
+# Hugging Face / Transformers cache (CRITICAL)
+# ============================
+hf_cache/
+.cache/
+huggingface/
+
+# ============================
+# ML models & weights (NEVER COMMIT)
+# ============================
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.pkl
+
+# Project-specific model folders
+Tuesday_bot/models/
+Tuesday_bot/models/**/
+
+# ============================
+# Data & datasets
+# ============================
+data/
+dataset/
+datasets/
+
+# ============================
+# Temporary audio & logs
+# ============================
+tmp_audio/
+*.log
+*.wav
+*.mp3
+*.webm
+
+# ============================
+# Jupyter
+# ============================
+.ipynb_checkpoints/
+
+# ============================
+# Datasets & generated data
+# ============================
+*.csv
+Tuesday_bot/data/
+Tuesday_bot/cleaned.csv
+
+# ============================
+# Training outputs & checkpoints
+# ============================
+checkpoint-*/
+**/checkpoint-*/
+**/trainer_state.json
+**/training_args.bin
+**/optimizer.pt
+**/scheduler.pt
+**/rng_state.pth
+**/scaler.pt
+
+# ============================
+# Model weights & binaries
+# ============================
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# ============================
+# OS & IDE junk
+# ============================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

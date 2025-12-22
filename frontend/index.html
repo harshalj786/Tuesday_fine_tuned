@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tuesday – AI Wellness Companion</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- CSS STYLES --- */
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, #111827 0%, #0b1220 40%, #060913 100%);
+      --glass-bg: rgba(15, 23, 42, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --primary: #7c87ff;
+      --accent: #5eead4;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --panel: #0f172a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .app-shell {
+      width: min(1200px, 96vw);
+      height: 80vh;
+      background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      backdrop-filter: blur(12px);
+      position: relative;
+      isolation: isolate;
+    }
+
+    /* Header strip */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.3px;
+      font-weight: 600;
+    }
+    .brand .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #60a5fa);
+      box-shadow: 0 0 16px rgba(96,165,250,0.6);
+    }
+
+    .reset-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      transition: 0.2s;
+    }
+    .reset-btn:hover { border-color: rgba(255,255,255,0.3); }
+
+    /* Left: sphere panel */
+    .left-panel {
+      background: linear-gradient(180deg, rgba(39, 51, 89, 0.35), rgba(12, 17, 30, 0.9));
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .halo {
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 40%, rgba(124,135,255,0.45), rgba(94,234,212,0.18), rgba(0,0,0,0));
+      filter: blur(24px);
+      animation: float 10s ease-in-out infinite;
+      opacity: 0.8;
+    }
+
+    .ai-orb {
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #8b5cf6, #6366f1, #0f172a);
+      box-shadow: 0 0 60px rgba(99,102,241,0.55), inset 0 0 60px rgba(255,255,255,0.05);
+      transition: all 0.5s ease;
+      position: relative;
+      z-index: 1;
+    }
+    .ai-orb::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 60% 60%, rgba(255,255,255,0.12), rgba(255,255,255,0));
+      filter: blur(4px);
+      opacity: 0.9;
+    }
+    .ai-orb.idle { animation: breathe 4s ease-in-out infinite; }
+    .ai-orb.listening { animation: pulse 1.2s infinite; background: radial-gradient(circle at 30% 30%, #ef4444, #b91c1c, #450a0a); box-shadow: 0 0 70px rgba(239,68,68,0.5); }
+    .ai-orb.thinking { animation: spin 2s linear infinite; background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706, #78350f); }
+    .ai-orb.speaking { animation: glow 0.8s infinite alternate; background: radial-gradient(circle at 30% 30%, #34d399, #059669, #064e3b); }
+
+    /* Right: conversation panel */
+    .right-panel {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      background: linear-gradient(160deg, rgba(15,23,42,0.72), rgba(9,12,20,0.9));
+      position: relative;
+    }
+
+    #chat-box {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .msg-row { display: flex; gap: 12px; align-items: flex-start; animation: slideIn 0.3s forwards; }
+    .msg-row.user { justify-content: flex-end; }
+    
+    .avatar {
+      width: 34px; height: 34px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0; text-transform: uppercase;
+    }
+    .avatar.bot { background: linear-gradient(135deg,#6366f1,#a855f7); color: #0b1020; }
+    .avatar.user { background: #1f2937; color: #e5e7eb; border: 1px solid rgba(255,255,255,0.08); }
+
+    .bubble {
+      max-width: 78%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      backdrop-filter: blur(6px);
+    }
+    .msg-row.bot .bubble {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--glass-border);
+      border-bottom-left-radius: 6px;
+      color: var(--text-main);
+    }
+    .msg-row.user .bubble {
+      background: linear-gradient(135deg, #7c87ff, #8b5cf6);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .controls {
+      padding: 16px 22px;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(12,17,30,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .mic-btn {
+      width: 64px; height: 64px; border-radius: 18px; border: none; background: var(--primary);
+      color: white; font-size: 24px; cursor: pointer; transition: 0.25s; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 12px 30px rgba(124,135,255,0.35);
+    }
+    .mic-btn:hover { transform: translateY(-1px); box-shadow: 0 18px 36px rgba(124,135,255,0.45); }
+    .mic-btn.recording { background: #ef4444; animation: ripple 1.5s infinite; box-shadow: 0 12px 30px rgba(239,68,68,0.35); }
+
+    .status-text { font-size: 0.9rem; color: var(--text-muted); flex: 1; }
+
+    /* Keyframes */
+    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+    @keyframes glow { from { box-shadow: 0 0 40px rgba(52, 211, 153, 0.5); } to { box-shadow: 0 0 80px rgba(52, 211, 153, 0.9); } }
+    @keyframes spin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(0.95); } 100% { transform: rotate(360deg) scale(1); } }
+    @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 70% { box-shadow: 0 0 0 22px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-12px) scale(1.02); } 100% { transform: translateY(0px) scale(1); } }
+
+    /* Scrollbar */
+    #chat-box::-webkit-scrollbar { width: 10px; }
+    #chat-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+    #chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+  </style>
+</head>
+
+<body>
+
+<div class="app-shell">
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>Tuesday · AI Therapist</span>
+    </div>
+    <button class="reset-btn" onclick="resetMemory()">Reset</button>
+  </div>
+
+  <!-- Left: Sphere -->
+  <div class="left-panel">
+    <div class="halo"></div>
+    <div class="ai-orb idle" id="aiOrb"></div>
+  </div>
+
+  <!-- Right: Conversation -->
+  <div class="right-panel">
+    <div id="chat-box">
+      <div class="msg-row bot">
+        <div class="avatar bot">T</div>
+        <div class="bubble">You made it here. Start wherever you want. 💙</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div id="status" class="status-text">Tap mic to speak</div>
+      <button id="recordBtn" class="mic-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- REAL RECORDING LOGIC (unchanged) ---
+  let mediaRecorder;
+  let audioChunks = [];
+  let isRecording = false;
+
+  const recordBtn = document.getElementById("recordBtn");
+  const statusDiv = document.getElementById("status");
+  const chatBox = document.getElementById("chat-box");
+  const orb = document.getElementById("aiOrb");
+
+  // Icon Helpers
+  const micIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+  const stopIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>';
+
+  recordBtn.onclick = async () => {
+    if (!isRecording) {
+      // START RECORDING
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+        mediaRecorder.onstop = sendAudioToBackend;
+        
+        mediaRecorder.start();
+        isRecording = true;
+        
+        // UI Updates
+        recordBtn.classList.add("recording");
+        recordBtn.innerHTML = stopIcon;
+        statusDiv.innerText = "Listening...";
+        orb.className = "ai-orb listening";
+        
+      } catch (err) {
+        console.error("Mic Error:", err);
+        alert("Microphone permission denied. Please allow access.");
+      }
+    } else {
+      // STOP RECORDING
+      mediaRecorder.stop();
+      isRecording = false;
+      
+      // UI Updates
+      recordBtn.classList.remove("recording");
+      recordBtn.innerHTML = micIcon;
+      statusDiv.innerText = "Thinking...";
+      orb.className = "ai-orb thinking";
+    }
+  };
+
+  async function sendAudioToBackend() {
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    const formData = new FormData();
+    formData.append("file", audioBlob, "voice.webm");
+
+    try {
+      // 1. Send to Python Backend
+      const response = await fetch("http://localhost:8000/talk", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) throw new Error("Backend Error");
+      
+      const data = await response.json();
+
+      // 2. Show User Text
+      addMessage(data.user_text, "user");
+
+      // 3. Show Bot Response (Delay slightly for realism)
+      setTimeout(() => {
+        addMessage(data.ai_text, "bot");
+        
+        // 4. Play Audio
+        const audio = new Audio(data.audio_url);
+        orb.className = "ai-orb speaking";
+        statusDiv.innerText = "Speaking...";
+        
+        audio.play();
+        
+        audio.onended = () => {
+          orb.className = "ai-orb idle";
+          statusDiv.innerText = "Tap mic to speak";
+        };
+      }, 500);
+
+    } catch (error) {
+      console.error(error);
+      statusDiv.innerText = "Error connecting to Tuesday";
+      orb.className = "ai-orb idle";
+      addMessage("⚠️ Error: Is the Python backend running?", "bot");
+    }
+  }
+
+  function addMessage(text, sender) {
+    if(!text) return; // Don't show empty messages
+    
+    const row = document.createElement("div");
+    row.className = `msg-row ${sender}`;
+    
+    const avatar = document.createElement("div");
+    avatar.className = `avatar ${sender}`;
+    avatar.innerText = sender === "user" ? "U" : "T";
+    
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerText = text;
+    
+    if (sender === "user") {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+    } else {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+    }
+    
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+  
+  async function resetMemory() {
+      await fetch("http://localhost:8000/reset", { method: "POST" });
+      chatBox.innerHTML = '';
+      addMessage("Memory wiped. Fresh start! ✨", "bot");
+  }
+</script>
+
+</body>
+</html>
