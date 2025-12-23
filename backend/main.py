@@ -6,12 +6,13 @@ import random
 import uuid
 import subprocess
 import logging
+import asyncio
 from pathlib import Path
 
 import torch
 import edge_tts
 from faster_whisper import WhisperModel
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -125,9 +126,10 @@ async def text_to_speech(text: str, mode: str, output_filename: str):
     return str(save_path)
 
 @app.post("/talk")
-async def talk(file: UploadFile = File(...)):
+async def talk(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     session_id = uuid.uuid4().hex
     start_total = time.time()
+    timings = {}
 
     raw_path = TMP_DIR / f"{session_id}_input{Path(file.filename).suffix}"
     wav_path = TMP_DIR / f"{session_id}.wav"
@@ -140,9 +142,14 @@ async def talk(file: UploadFile = File(...)):
         return {"error": "Audio conversion failed"}
 
     t1 = time.time()
-    segments, _ = whisper_model.transcribe(str(wav_path), beam_size=5)
+    loop = asyncio.get_running_loop()
+    segments, _ = await loop.run_in_executor(
+        None,
+        lambda: whisper_model.transcribe(str(wav_path), beam_size=5)
+    )
     user_text = " ".join([s.text for s in segments]).strip()
-    logger.info(f"Transcription ({time.time() - t1:.2f}s): {user_text}")
+    timings["transcription"] = time.time() - t1
+    logger.info(f"Transcription ({timings['transcription']:.2f}s): {user_text}")
 
     t2 = time.time()
     if not user_text:
@@ -156,16 +163,21 @@ async def talk(file: UploadFile = File(...)):
 
         if confidence < 0.55:
             mode = "neutral"
-
         if confidence < 0.4:
             ai_response_text = "I'm here with you. Take your time."
 
-    logger.info(f"Generation ({time.time() - t2:.2f}s) | Mode: {mode}")
+    timings["generation"] = time.time() - t2
+    logger.info(f"Generation ({timings['generation']:.2f}s) | Mode: {mode}")
 
     t3 = time.time()
     output_audio_filename = f"{session_id}_response.mp3"
-    await text_to_speech(ai_response_text, mode, output_audio_filename)
-    logger.info(f"TTS ({time.time() - t3:.2f}s)")
+    background_tasks.add_task(
+        text_to_speech,
+        ai_response_text,
+        mode,
+        output_audio_filename
+    )
+    timings["tts"] = time.time() - t3
 
     raw_path.unlink(missing_ok=True)
     wav_path.unlink(missing_ok=True)
@@ -178,7 +190,8 @@ async def talk(file: UploadFile = File(...)):
         "ai_text": ai_response_text,
         "mode": mode,
         "audio_url": f"http://localhost:8000/audio/{output_audio_filename}",
-        "processing_time": total_time
+        "processing_time": total_time,
+        "timings": timings
     }
 
 @app.post("/reset")
