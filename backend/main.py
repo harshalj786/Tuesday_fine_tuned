@@ -28,6 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")
 
 app = FastAPI()
 
@@ -51,7 +52,7 @@ def load_models():
     global whisper_model, bot
     logger.info(f"Using device: {DEVICE}")
     whisper_model = WhisperModel(
-        "small",
+        WHISPER_MODEL,
         device=DEVICE,
         compute_type="float16" if DEVICE == "cuda" else "int8"
     )
@@ -151,6 +152,14 @@ async def talk(file: UploadFile = File(...)):
         result = bot.generate_response(user_text)
         ai_response_text = result["response"]
         mode = result["mode"]
+        confidence = result.get("confidence", 1.0)
+
+        if confidence < 0.55:
+            mode = "neutral"
+
+        if confidence < 0.4:
+            ai_response_text = "I'm here with you. Take your time."
+
     logger.info(f"Generation ({time.time() - t2:.2f}s) | Mode: {mode}")
 
     t3 = time.time()
