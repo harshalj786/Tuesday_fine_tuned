@@ -130,7 +130,99 @@ Tuesday is designed to be **human**, not legal.
 * ❌ User Authentication
 * ❌ Long-term Database Memory
 
+## 📊 Evaluation & Results
+
+Tuesday’s mental-state classifier is evaluated at both **fine-grained** and **grounded** levels to reflect real conversational performance rather than brittle exact-label accuracy.
+
 ---
+
+### Fine-Grained Emotion Classification (36 Classes)
+
+- **Accuracy:** ~46%
+- **Macro F1:** ~0.42
+- **Weighted F1:** ~0.46
+
+Exact emotion classification across 36 labels is inherently ambiguous. Emotions such as *afraid*, *anxious*, and *terrified* or *joyful*, *excited*, and *content* frequently overlap semantically, even among human annotators.
+
+The confusion matrix shows **structured confusion rather than random errors**, indicating that the model learns meaningful emotional representations instead of memorizing labels.
+
+---
+
+### Grounded Evaluation (Psychologically Meaningful Metrics)
+
+To better assess practical conversational understanding, the classifier is additionally evaluated at grounded abstraction levels.
+
+#### Grounded Metrics Summary
+
+| Metric | Accuracy | Macro F1 | Interpretation |
+|------|---------|----------|---------------|
+| **Valence** (Positive / Neutral / Negative) | **79.2%** | **0.71** | Strong emotional direction detection |
+| **Arousal** (High / Medium / Low) | **67.1%** | **0.67** | Moderate overlap at medium intensity |
+| **Top-3 Emotion Accuracy** | **68.8%** | — | Correct emotion usually in semantic neighborhood |
+
+---
+
+### Valence Analysis
+
+The model demonstrates strong polarity awareness:
+
+- **Negative emotions:** F1 ≈ 0.86  
+- **Positive emotions:** F1 ≈ 0.78  
+- **Neutral emotions:** Lower performance due to linguistic ambiguity
+
+This confirms reliable detection of emotional direction, which is critical for selecting appropriate conversational tone.
+
+---
+
+### Arousal Analysis
+
+Arousal classification is more challenging due to overlap between emotional intensities.
+
+Despite this, the model achieves **67.1% accuracy**, showing consistent separation between high-energy, low-energy, and moderate emotional states without relying on explicit intensity cues.
+
+---
+
+### Top-K Emotion Accuracy
+
+In **68.8% of cases**, the correct emotion appears within the model’s **top-3 predictions**.
+
+This indicates that even when the top-1 label is incorrect, the model’s predictions remain within the correct semantic neighborhood, which is sufficient for downstream response generation and mode selection.
+
+---
+
+### Failure Analysis
+
+The model struggles most with:
+
+- Fine-grained positive emotions (e.g., *joyful* vs *excited*)
+- Low-arousal negative emotions (e.g., *sad* vs *sentimental*)
+
+These failure modes are consistent with label ambiguity in the dataset rather than representational collapse. Errors cluster logically instead of appearing random.
+
+---
+
+### Impact on System Behavior
+
+While exact emotion labels may vary, grounded evaluation shows that Tuesday reliably captures:
+
+- Emotional **direction** (positive vs negative)
+- Emotional **intensity**
+- **Semantic proximity** between emotions
+
+As a result, response mode selection (`GENTLE_CHECK`, `HYPE_SESSION`, `REAL_TALK`, etc.) remains appropriate even when fine-grained emotion labels overlap.
+
+---
+
+### Summary
+
+Tuesday’s evaluation demonstrates that:
+
+- Raw fine-grained emotion classification is challenging and noisy
+- Grounded emotional understanding is strong and consistent
+- The model behaves reliably in real conversational settings
+
+This evaluation approach prioritizes **practical emotional intelligence over superficial label accuracy**.
+
 
 ## 👤 Author
 
